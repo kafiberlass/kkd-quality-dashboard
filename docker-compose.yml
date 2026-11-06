@@ -1,0 +1,20 @@
+services:
+  mock-api:
+    build:
+      context: ./mock-api
+    ports:
+      - "8000:8000"
+    environment:
+      MOCK_LATENCY_MS: ${MOCK_LATENCY_MS:-300}
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    ports:
+      - "5173:80"
+    depends_on:
+      - mock-api
+    restart: unless-stopped
