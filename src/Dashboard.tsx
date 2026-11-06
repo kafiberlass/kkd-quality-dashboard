@@ -3,7 +3,7 @@ import { Alert, Avatar, Button, Card, Col, Descriptions, Empty, Input, Modal, Pa
 import type { TableColumnsType } from 'antd';
 import { ArrowDownOutlined, ArrowUpOutlined, BellOutlined, CheckCircleFilled, CheckOutlined, ClockCircleOutlined, ExclamationCircleFilled, FileSearchOutlined, FilterOutlined, InfoCircleOutlined, ReloadOutlined, SearchOutlined, WarningFilled } from '@ant-design/icons';
 
-const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || '';
 type Unit = { id: string; name: string; parent_id: string | null; depth: number; level: string };
 type Rule = { code: string; title: string; severity: string };
 type Run = { id: string; number: number; status: 'completed' | 'failed' | 'running'; snapshot_date: string; compared_to_run_id?: string | null; error?: string | null };
@@ -14,6 +14,7 @@ type Issue = { id:string; rule_code:string; rule_title:string; severity:string; 
 type Page<T> = { items:T[]; total:number };
 
 async function request<T>(path: string, signal?: AbortSignal): Promise<T> {
+  if (!API_BASE) throw new Error('Не задан адрес API. Укажите VITE_API_URL в файле .env.');
   const response = await fetch(`${API_BASE}${path}`, { signal });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(body?.error?.message || `Ошибка запроса (${response.status})`);
@@ -43,7 +44,7 @@ export default function Dashboard() {
   const applyCounter=(key:string)=>{setDeltaStatus(key);setPage(1);document.getElementById('issues')?.scrollIntoView({behavior:'smooth',block:'start'});};
   const clearFilters=()=>{setSeverity(undefined);setRule(undefined);setDeltaStatus(undefined);setSearch('');setQuery('');setPage(1);};
   const columns:TableColumnsType<Issue>=[
-    {title:'Проблема',key:'problem',width:310,render:(_,i)=><button className="problem-link" onClick={()=>openIssue(i)}><Typography.Text strong>{i.rule_title}</Typography.Text><span>{i.goal_title}{i.kr_title?` · ${i.kr_title}`:''}</span></button>},
+    {title:'Проблема',key:'problem',width:310,render:(_,i)=><button className="problem-link" onClick={event=>{event.stopPropagation();openIssue(i);}}><Typography.Text strong>{i.rule_title}</Typography.Text><span>{i.goal_title}{i.kr_title?` · ${i.kr_title}`:''}</span></button>},
     {title:'Важность',dataIndex:'severity',width:140,render:(v:string)=><Tag color={v==='critical'?'error':v==='major'?'warning':'default'}>{severityLabel[v]||v}</Tag>},
     {title:'Подразделение',dataIndex:'unit_name',width:200,ellipsis:true},
     {title:'Ответственный',dataIndex:'owner',width:190,render:(o:Owner)=>o?.full_name||<Typography.Text type="secondary">Не назначен</Typography.Text>},
